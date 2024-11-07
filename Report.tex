@@ -1,0 +1,141 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{caption}
+\usepackage{float}
+
+\title{Cache Simulator Report}
+\author{Siddharth Narsipur }
+
+\begin{document}
+
+\maketitle
+
+\section{Group Members}
+
+Siddharth Narsipur (LRU set-associative) \\
+Isiah Dickerson (LRU set-associative) \\
+Baazil Akhlaque (Reuse Distance Analyzer)
+
+\section{Introduction}
+
+I implemented a set-associative LRU replacement cache simulator. To manage the LRU replacement policy, each set has a LRU queue (explained below) which stores the tags of every cache line in that set. 
+
+\section{Structs}
+
+\begin{verbatim}
+typedef struct Cache {
+    int B;
+    int S;
+    int W;
+    Set** sets;
+    int misses;
+} Cache;
+
+typedef struct Set {
+    Queue* q;
+    CacheLine** lines;
+    int n_lines;
+} Set;
+
+typedef struct CacheLine {
+    long long tag;
+    bool valid;
+} CacheLine;
+
+typedef struct Queue {
+    long long* items;
+    int maxSize;
+    int front;
+    int end;
+} Queue;
+\end{verbatim}
+
+\section{Data Structures}
+
+The LRU Queue supports the standard enqueue() and dequeue() functions that have been modified to support the LRU policy. The tags of each cache line in a set are stored in the queue to simulate the operations of the cache.  The LRU cache line is stored at the beginning of the queue. If the set is full, the dequeue() functions removes the first element and replaces it with the new tag.
+\\ \\
+If the argument to the  enqueue() function already exists in the queue, the value is removed from the queue and inserted at the end. If the queue() is full, the LRU tag is removed.
+
+\section{Results and Comparison}
+
+My LRU cache simulator passes all the test cases (matrix) given by the TAs.
+\\ \\
+I then ran the unit tests given in the assingment and compared it with Isiah's LRU cache simulator. I then ran some more tests on my own cache that experiments with set associativity and block size. 
+
+\begin{table}[htbp]
+\centering
+\captionsetup{labelformat=empty}
+\caption{Comparison Test: m = $10^6$ 4-byte ints, 10 repeats, B=6, W= 3, S = 11}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+Type & Traversal Order & Misses & Running Time \\
+\hline
+Siddharth LRU & Cyclic & 625,010 & 0.57s \\
+\hline
+Isiah LRU & Cyclic & 625,010 & 0.23s \\
+\hline
+Siddharth LRU & Sawtooth & 477,544 & 0.55s \\
+\hline
+Isiah LRU & Sawtooth & 477,544 & 0.20s \\
+\hline
+\end{tabular}
+\end{table}
+
+\noindent As seen above, sawtooth traversal has fewer misses that cyclic traversal for the same unit test. We can also see that Isiah's implementation of the LRU policy using a 3-D array is slightly more efficient than my implementation using a Queue for each set. 
+\\ \\
+Baazil created a reuse distance analyzer which cannot be directly compared with the LRU simulator. 
+
+\begin{table}[H]
+\centering
+\captionsetup{labelformat=empty}
+\caption{Associativity Test: m = $10^6$ 4-byte ints, 10 repeats, B=6, W=10}
+\begin{tabular}{|c|c|c|}
+\hline
+Traversal Order & S & Misses  \\
+\hline
+Sawtooth & 2 & 588,146 \\
+\hline
+Sawtooth & 5 & 330,098 \\
+\hline
+Sawtooth & 8 & 62,501 \\
+\hline
+Sawtooth & 15 & 62,501 \\
+\hline
+\end{tabular}
+\end{table}
+
+\noindent Running tests on my LRU cache, we can see that increasing the number of sets decreases the number of misses upto a point for this test-case. After reaching a minimum, increasing the number of sets doesn't improve the miss rate.
+
+\begin{table}[H]
+\centering
+\captionsetup{labelformat=empty}
+\caption{Block Size Test: m = $10^6$ 4-byte ints, 10 repeats, S=10, W=10}
+\begin{tabular}{|c|c|c|}
+\hline
+Traversal Order & B & Misses  \\
+\hline
+Sawtooth & 2 & 1,000,001 \\
+\hline
+Sawtooth & 5 & 125,001 \\
+\hline
+Sawtooth & 10 & 3,907 \\
+\hline
+Sawtooth & 15 & 123 \\
+\hline
+Sawtooth & 20 & 4 \\
+\hline
+\end{tabular}
+\end{table}
+
+\noindent As seen above, block size can drastically change the miss rate for a cache. If the number of sets and cache lines is controlled, increasing block size exponentially decreases the number of misses as more addresses map onto the same tag.
+
+\section{Tests}
+
+To run my tests:
+\begin{verbatim}
+cd src
+gcc simulator.c test.c -o test
+./test
+\end{verbatim}
+
+\end{document}
